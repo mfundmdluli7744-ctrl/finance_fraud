@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Office of the Auditor General – Financial Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="navbar">
+        <div class="logo-container" style="display: flex; align-items: center; gap: 1rem;">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" style="height: 40px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
+            <div class="logo-text" style="margin-bottom:0; font-size: 1.1rem; line-height: 1.1; display: block;">
+                <span style="color: var(--accent-secondary); display: block; font-size: 0.7rem; letter-spacing: 1px;">ESWATINI</span>
+                AUDITOR GENERAL
+            </div>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
+            {% if current_user.role in ['Admin', 'Auditor'] %}
+            <a href="{{ url_for('audit_view') }}" class="nav-link">Audit Trail</a>
+            <a href="{{ url_for('generate_report') }}" class="nav-link" style="color: var(--accent-secondary); font-weight: 600;">Generate Report</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="nav-link" style="color: var(--accent-red);">Logout</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="{% if not current_user.is_authenticated %}auth-container{% else %}container{% endif %}" style="padding: 2rem; min-height: 80vh;">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer style="margin-top: 4rem; padding: 2rem; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-secondary); font-size: 0.8rem;">
+        <div style="margin-bottom: 0.5rem;">
+            <strong>Office of the Auditor General</strong><br>
+            Mbabane, Eswatini | Accountability & Transparency
+        </div>
+        <div>&copy; 2026 Audit Management System - Research Proposal Implementation</div>
+    </footer>
+
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(f => {
+                f.style.opacity = '0';
+                setTimeout(() => f.style.display = 'none', 500);
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

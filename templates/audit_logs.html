@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="glass-panel">
+    <div class="panel-header">
+        <h3 style="font-size: 1.2rem;">System Audit Trail</h3>
+        <p style="color: var(--text-secondary); font-size: 0.8rem;">Historical log of all administrative and security events.</p>
+    </div>
+    
+    <table style="margin-top: 2rem;">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Operator</th>
+                <th>Action</th>
+                <th>IP Address</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="font-size: 0.75rem; color: var(--text-secondary);">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>
+                    <span style="padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); font-size: 0.8rem;">
+                        {{ log.user.username if log.user else 'System' }}
+                    </span>
+                </td>
+                <td style="font-weight: 600; color: var(--accent-secondary);">{{ log.action }}</td>
+                <td style="font-size: 0.75rem; font-family: monospace;">{{ log.ip_address }}</td>
+                <td style="color: var(--text-secondary); font-size: 0.8rem;">{{ log.details }}</td>
+            </tr>
+            {% endfor %}
+            {% if not logs %}
+            <tr>
+                <td colspan="5" style="text-align:center; padding: 4rem; color: var(--text-secondary);">No audit logs found.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

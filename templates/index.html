@@ -1,0 +1,156 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <p class="stat-label">System Volume (Total)</p>
+        <p class="stat-value">E{{ "{:,.2f}".format(stats.total_volume) }}</p>
+    </div>
+    <div class="stat-card">
+        <p class="stat-label">Audit Review Coverage</p>
+        <p class="stat-value" style="color: var(--accent-green);">100%</p>
+        <p style="font-size: 0.6rem; color: var(--text-secondary); margin-top: 4px;">Real-time exhaustive analysis</p>
+    </div>
+    <div class="stat-card" style="border-color: var(--accent-red);">
+        <p class="stat-label">Flagged Anomalies</p>
+        <p class="stat-value" style="color: var(--accent-red);">{{ stats.active_alerts }}</p>
+    </div>
+    {% if current_user.role in ['Admin', 'Auditor'] %}
+    <div class="stat-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; border-style: dashed; border-color: var(--accent-secondary);">
+        <a href="{{ url_for('generate_report') }}" class="btn-primary" style="margin-top: 0; padding: 0.5rem 1rem; width: auto; font-size: 0.8rem;">
+            Export Audit Report
+        </a>
+        <p style="font-size: 0.6rem; color: var(--text-secondary); margin-top: 8px;">Objective 5: Automated Reporting</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="dashboard-grid">
+    <!-- Main Monitoring Panel -->
+    <div class="main-column">
+        <!-- New Transaction & Scan -->
+        <div class="glass-panel" style="margin-bottom: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div>
+                <h3 style="margin-bottom: 1rem; font-size: 0.9rem;">Manually Log Transaction</h3>
+                <form action="/process_transaction" method="POST">
+                    <div class="form-group">
+                        <input type="number" step="0.01" name="amount" placeholder="Amount (E)" required>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <select name="type">
+                                <option value="Payment">Payment</option>
+                                <option value="Transfer">Transfer</option>
+                                <option value="Withdrawal">Withdrawal</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="location" placeholder="City/Region">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top:0;">Process</button>
+                </form>
+            </div>
+            <div style="border-left: 1px solid var(--border-color); padding-left: 2rem;">
+                <h3 style="margin-bottom: 1rem; font-size: 0.9rem;">Receipt OCR Scan</h3>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    Upload an invoice or receipt to automatically extract transaction details.
+                </p>
+                <form action="/scan_receipt" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <input type="file" name="receipt" style="font-size: 0.75rem;">
+                    </div>
+                    <button type="submit" class="btn-primary" style="background: var(--accent-green); margin-top:0;">Initiate OCR Scan</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Risk Analytics -->
+        <div class="glass-panel" style="margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">System Risk Distribution</h3>
+            <div class="chart-container">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="glass-panel">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Real-time Monitoring Ledger</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Location</th>
+                        <th>Risk Score</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td style="font-size: 0.7rem; color: var(--text-secondary);">{{ t.timestamp.strftime('%H:%M:%S %d/%m') }}</td>
+                        <td><span class="type">{{ t.type }}</span></td>
+                        <td style="font-size: 0.8rem;">{{ t.location }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 40px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                    <div style="width: {{ t.risk_score }}%; height: 100%; background: {% if t.risk_score > 70 %}var(--accent-red){% elif t.risk_score > 30 %}var(--accent-secondary){% else %}var(--accent-primary){% endif %};"></div>
+                                </div>
+                                <span style="font-size: 0.75rem;">{{ t.risk_score | int }}%</span>
+                            </div>
+                        </td>
+                        <td class="amount" style="text-align: right;">E{{ "{:,.2f}".format(t.amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Alert Column -->
+    <div class="alert-column">
+        <div class="glass-panel" style="height: 100%;">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Security Alerts</h3>
+            {% for a in alerts %}
+            <div class="alert-item severity-{{ a.severity }}">
+                <div class="alert-reason" style="font-size: 0.8rem;">{{ a.reason }}</div>
+                <div class="alert-meta">
+                    TX #{{ a.transaction_id }} • {{ a.transaction.type }} • E{{ "{:,.2f}".format(a.transaction.amount) }}
+                </div>
+                <div class="alert-meta" style="margin-top: 4px;">{{ a.timestamp.strftime('%H:%M:%S') }}</div>
+            </div>
+            {% endfor %}
+            {% if not alerts %}
+            <p style="text-align:center; color: var(--text-secondary); font-size: 0.8rem; padding: 2rem;">No immediate threats detected.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('riskChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+            datasets: [{
+                data: [{{ risk_data.Low }}, {{ risk_data.Medium }}, {{ risk_data.High }}],
+                backgroundColor: ['#1e6044', '#e9e200', '#ef4444'],
+                borderWidth: 0,
+                spacing: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#94a3b8', font: { size: 11 } }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+</script>
+{% endblock %}
