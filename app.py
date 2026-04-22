@@ -22,6 +22,10 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+# Ensure database tables are created (Safe for SQLite)
+with app.app_context():
+    db.create_all()
+
 # Global Fraud Engine
 fraud_engine = FraudEngine(db.session, __import__('models'))
 
